@@ -4,6 +4,8 @@ import numpy as np
 # size is the size of the seed/chunk,
 # base is the min_height (the value of the first element)
 # variability is like compression, higher = less compressed
+
+
 def gen_seed(size, base=None, variability=100):
     temp = np.random.rand(size)
     if base is None and variability == 100:
@@ -21,6 +23,8 @@ def gen_seed(size, base=None, variability=100):
 
 # params are the same as gen_seed() except:
 # base is an array of bases
+
+
 def gen_seed_2d(size, base=None, variability=100):
     print("generating seed...")
     temp = np.random.rand(size, size)
@@ -39,12 +43,14 @@ def gen_seed_2d(size, base=None, variability=100):
                     temp[x, y] = base[x] - (temp[x, y] * (variability/100))
     return temp
 
+
 def multiply_maps(size, map1, map2):
     output = np.zeros((size, size))
     for x in range(size):
         for y in range(size):
             output[x, y] = map1[x, y] * map2[x, y]
     return output
+
 
 def add_maps(size, map1, map2, offset=0):
     output = np.zeros((size, size))
@@ -65,7 +71,8 @@ def gen_perlin_noise_1D(output_size, seed, octaves=1, bias=2):
 
         for o in range(octaves):
             # size between samples in current octave is pitch
-            pitch_size = output_size >> o # the pitch size starts as the size of the array, and gets halved for each octave
+            # the pitch size starts as the size of the array, and gets halved for each octave
+            pitch_size = output_size >> o
             # the x locations in the array of the samples we are interpolating between this iteration
             sample1 = (x // pitch_size) * pitch_size
             sample2 = (sample1 + pitch_size) % output_size
@@ -73,7 +80,7 @@ def gen_perlin_noise_1D(output_size, seed, octaves=1, bias=2):
             noise1 = seed[sample1]
             noise2 = seed[sample2]
             # without this if statement, resulting noise texture will be tileable
-            #if sample1 == sample2:
+            # if sample1 == sample2:
             #    noise2 = seed[output_size - 1]
 
             blend = (x - sample1) / pitch_size
@@ -84,6 +91,7 @@ def gen_perlin_noise_1D(output_size, seed, octaves=1, bias=2):
         output[x] = noise / scaleAcc
     return output
 
+
 def gen_perlin_noise_2D_lines(output_size, seed_2d, octaves=1, bias=2):
     output = np.zeros((output_size, output_size))
     frames = np.zeros((output_size, output_size))
@@ -91,16 +99,18 @@ def gen_perlin_noise_2D_lines(output_size, seed_2d, octaves=1, bias=2):
     # do the perlin algorithm on each seed of seed_2d so we have a list of random perlin noise
     for x in range(output_size):
         frames[x] = gen_perlin_noise_1D(output_size, seed_2d[x], octaves, bias)
-    
+
     print("point 2")
     # Interpolate the 2nd dimension with our new list
     # we flip the list so we can do it again easier
     interpolate_deez_nuts = frames.T
     print("point 3")
     for y in range(output_size):
-        output[y] = gen_perlin_noise_1D(output_size, interpolate_deez_nuts[y], octaves, bias)
+        output[y] = gen_perlin_noise_1D(
+            output_size, interpolate_deez_nuts[y], octaves, bias)
     print("point 4")
     return output
+
 
 def gen_perlin_noise_2D(output_size, seed, octaves=1, bias=2):
     print("start")
@@ -124,8 +134,10 @@ def gen_perlin_noise_2D(output_size, seed, octaves=1, bias=2):
                 blend_x = (x - sample_x1) / pitch_size
                 blend_y = (y - sample_y1) / pitch_size
 
-                sample_t = (1 - blend_x) * seed[sample_x1, sample_y1] + blend_x * seed[sample_x2, sample_y1]
-                sample_b = (1 - blend_x) * seed[sample_x1, sample_y2] + blend_x * seed[sample_x2, sample_y2]
+                sample_t = (
+                    1 - blend_x) * seed[sample_x1, sample_y1] + blend_x * seed[sample_x2, sample_y1]
+                sample_b = (
+                    1 - blend_x) * seed[sample_x1, sample_y2] + blend_x * seed[sample_x2, sample_y2]
 
                 noise += (blend_y * (sample_b - sample_t) + sample_t) * scale
                 scaleAcc += scale
