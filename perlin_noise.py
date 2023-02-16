@@ -1,12 +1,8 @@
 import random as rand
 import numpy as np
 
-# size is the size of the seed/chunk,
-# base is the min_height (the value of the first element)
-# variability is like compression, higher = less compressed
 
-
-def gen_seed(size, base=None, variability=100):
+def gen_seed(size: int, base: int = None, variability: int = 100):
     temp = np.random.rand(size)
     if base is None and variability == 100:
         return temp
@@ -25,7 +21,7 @@ def gen_seed(size, base=None, variability=100):
 # base is an array of bases
 
 
-def gen_seed_2d(size, base=None, variability=100):
+def gen_seed_2d(size: int, base: int = None, variability: int = 100):
     print("generating seed...")
     temp = np.random.rand(size, size)
     if base is None:
@@ -44,7 +40,7 @@ def gen_seed_2d(size, base=None, variability=100):
     return temp
 
 
-def multiply_maps(size, map1, map2):
+def multiply_maps(size: int, map1, map2):
     output = np.zeros((size, size))
     for x in range(size):
         for y in range(size):
@@ -52,7 +48,7 @@ def multiply_maps(size, map1, map2):
     return output
 
 
-def add_maps(size, map1, map2, offset=0):
+def add_maps(size: int, map1, map2, offset=0):
     output = np.zeros((size, size))
     for x in range(size):
         for y in range(size):
