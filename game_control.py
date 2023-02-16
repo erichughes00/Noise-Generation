@@ -16,72 +16,60 @@ class game_control:
         self.screen = pygame.display.set_mode(self.size)
         self.text = pygame.font.Font("fonts\shittypixel1.ttf", 18)
         # for moving around
-        self.speed = 5
 
         self.generation_variables = nd.generation_variables(self.width, 4, .5, .2, 50)
         
         # generates the starting chunks at coordinate 0
         self.starting_chunk_1d = nd.chunk(0, self.generation_variables)
         self.starting_chunk_2d = nd.chunk(0, self.generation_variables, True)
- 
-        self.x, self.y, self.z = 0, 1, 1
-        # the bottom of the window
-        self.y_0 = self.height - 1
-
-        # Counters  for
-        self.chunk_counters = self.pos_chunks, self.neg_chunks, self.pos_chunks_2d, self.neg_chunks_2d = 0, 0, 0, 0
 
         # a list of chunks
-        self.chunks_1d = [self.starting_chunk_1d]
-        self.chunks_2d = [self.starting_chunk_2d]
+        chunks_1d = [self.starting_chunk_1d]
+        chunks_2d = [self.starting_chunk_2d]
 
-        # 1 - 1D, 2 - 2D, 3 - 2D (lines), 4 - 2D (blend)
-        self.generation_mode = 1
-
-        self.visual_2d_mode = False
-        self.draw_seed = False
-        self.refresh = True
-        self.full_refresh = False
-        self.regen = False
-        self.show_debug = False
-        self.input = ih.input_handler(self)
-        self.draw = df.draw(self.screen, self)
+        self.draw_variables = nd.draw_variables()
+        self.map_1d = nd.map(width, chunks_1d, 1)
+        self.map_2d = nd.map(width, chunks_2d, 2)
+        self.input = ih.input_handler(self, self.generation_variables, self.draw_variables, self.map_1d, self.map_2d)
         self.colors = c.color()
+        self.draw = df.draw(self.screen, self.colors)
     
     def on_user_update(self):
-        if self.regen:   
+        if self.draw_variables.regen:   
             print("regenerating...")
             self._regen() 
             print("regenerated")
 
-        if self.refresh: 
+        if self.draw_variables.refresh: 
             print("refreshing...")
             self._refresh()
             print("refreshed")
 
     def draw_event(self):
-        self.screen.fill(c.black)
+        self.screen.fill(self.colors.black)
         self._draw_noise()
 
-        if (self.show_debug):
+        if (self.draw_variables.show_debug):
             self._draw_debug_menu()
         
         # refresh the display
         pygame.display.flip()
     
     def _draw_debug_menu(self):
+        cur_x = self.map_1d.x
+        cur_z = self.map_1d.z
         text_coords = self.text.render(
-            "X (A/D): " + str(self.x) + " | Z (W/D): " + str(self.z), False, c.white)
+            "X (A/D): " + str(cur_x) + " | Z (W/D): " + str(cur_z), False, self.colors.white)
         text_octaves = self.text.render(
-            "octaves (O): " + str(self.generation_variables.octaves), False, c.white)
+            "octaves (O): " + str(self.generation_variables.octaves), False, self.colors.white)
         text_base = self.text.render(
-            "base ([/]): " + str(self.generation_variables.min_height), False, c.white)
+            "base ([/]): " + str(self.generation_variables.min_height)[0:4], False, self.colors.white)
         text_variability = self.text.render(
-            "variability (-/=): " + str(self.generation_variables.variability), False, c.white)
+            "variability (-/=): " + str(self.generation_variables.variability), False, self.colors.white)
         text_bias = self.text.render(
-            "scaling_bias (Q/E): " + str(self.generation_variables.scaling_bias)[0:4], False, c.white)
+            "scaling_bias (Q/E): " + str(self.generation_variables.scaling_bias)[0:4], False, self.colors.white)
         text_speed = self.text.render(
-            "speed (,/.): " + str(self.speed), False, c.white)
+            "speed (,/.): " + str(self.draw_variables.speed), False, self.colors.white)
 
         self.screen.blit(text_coords, (5, self.height - 18))
         self.screen.blit(text_octaves, (5, self.height - 36))
@@ -92,40 +80,39 @@ class game_control:
 
 
     def _draw_noise(self):
-        if self.draw_seed:
+        if self.draw_variables.draw_seed:
             self.draw.draw_pure_noise()
-        if self.generation_mode == 1:
-            for chunk in self.chunks_1d:
-                self.draw.draw_noise_1d(chunk)
-        elif self.generation_mode == 2:
-            for chunk in self.chunks_2d:
-                self.draw.draw_noise_2d(chunk)
-
+        if self.draw_variables.generation_mode == 1:
+            for chunk in self.map_1d.chunks:
+                self.draw.draw_noise_1d(chunk, self.map_1d)
+        elif self.draw_variables.generation_mode == 2:
+            for chunk in self.map_2d.chunks:
+                self.draw.draw_noise_2d_side(chunk, self.map_2d)
 
     def _regen(self):
-        if self.generation_mode == 1:
-            for chunk in self.chunks_1d:
+        if self.draw_variables.generation_mode == 1:
+            for chunk in self.map_1d.chunks:
                 chunk = nd.chunk(chunk.coordinate, self.generation_variables)
-        elif self.generation_mode == 2:
-            if self.full_refresh: 
-                for chunk in self.chunks_2d:
+        elif self.draw_variables.generation_mode == 2:
+            if self.draw_variables.full_refresh: 
+                for chunk in self.map_1d.chunks:
                     chunk = nd.chunk(chunk.coordinate, self.generation_variables)
             else:
-                self.chunks_2d[-1] = nd.chunk(chunk.coordinate, self.generation_variables)
+                self.map_2d.chunks[-1] = nd.chunk(self.map_2d.chunks[-1].coordinate, self.generation_variables)
         
-        self.regen = False
+        self.draw_variables.regen = False
 
     def _refresh(self):
-        if self.generation_mode == 1:
-            for chunk in self.chunks_1d:
-                chunk.noise = gf.generate_noise_1d(chunk.seed)
-        elif self.generation_mode == 2:  # only refreshing the latest chunk for 2d bc its slow
-            if self.full_refresh:
-                for chunk in self.chunks_2d:
-                    chunk.noise = gf.generate_noise_2d(chunk.seed)
+        if self.draw_variables.generation_mode == 1:
+            for chunk in self.map_1d.chunks:
+                chunk.noise = gf.generate_noise_1d(chunk)
+        elif self.generation_variables.generation_mode == 2:  # only refreshing the latest chunk for 2d
+            if self.draw_variables.full_refresh:
+                for chunk in self.map_2d.chunks:
+                    chunk.noise = gf.generate_noise_2d(chunk)
             else:
-                self.chunks_2d[-1].noise = gf.generate_noise_2d(self.chunks_2d[-1].seed)
-        self.full_refresh = False
-        self.refresh = False
+                self.map_2d.chunks[-1].noise = gf.generate_noise_2d(self.map_2d.chunks[-1])
+        self.draw_variables.full_refresh = False
+        self.draw_variables.refresh = False
 
         

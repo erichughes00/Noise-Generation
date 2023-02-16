@@ -1,14 +1,16 @@
 import pygame
-import game_control
 import noise_data as nd
 import generation_functions as gf
+import color
 
 
 class input_handler:
-    def __init__(self, controller: game_control.game_control):
-        self.controller = controller
-        self.colors = self.controller.colors
-        self.generation_variables = self.controller.generation_variables
+    def __init__(self, colors:color.color, generation_variables:nd.generation_variables, draw_variables:nd.draw_variables, map_1d:nd.map, map_2d:nd.map):
+        self.colors = colors
+        self.generation_variables = generation_variables
+        self.draw_variables = draw_variables
+        self.map_1d = map_1d
+        self.map_2d = map_2d
 
     def on_keyboard_press(self):
         # R - randomize the seeds and regenerate the map - a hard refresh
@@ -20,7 +22,7 @@ class input_handler:
             self._soft_refresh()
 
         # F5 - toggle debug menu
-        if pygame.key.get_pressed()[pygame.K_F5]:
+        if pygame.key.get_pressed()[pygame.K_p]:
             self._toggle_debug()
 
         # C - randomize the color
@@ -33,23 +35,23 @@ class input_handler:
 
         # 1 - switch to 1D noise generation
         if pygame.key.get_pressed()[pygame.K_1]:
-            self.controller.generation_mode = 1
+            self._set_generation_mode(1)
 
         # 2 - switch to 2D noise generation
         if pygame.key.get_pressed()[pygame.K_2]:
-            self.controller.generation_mode = 2
+            self._set_generation_mode(2)
 
         # 3 - switch to alternative 2D noise generation
-        if pygame.key.get_pressed()[pygame.K_3]:
-            self.controller.generation_mode = 3
+        #if pygame.key.get_pressed()[pygame.K_3]:
+        #    self._set_generation_mode(3)
 
         # 4 - switch to blended 2D noise generation
-        if pygame.key.get_pressed()[pygame.K_4]:
-            self.controller.generation_mode = 4
+        #if pygame.key.get_pressed()[pygame.K_4]:
+        #    self._set_generation_mode(4)
 
         # N - toggle between pure noise and perlin noise
         if pygame.key.get_pressed()[pygame.K_n]:
-            self.controller.draw_seed = not self.controller.draw_seed
+            self.draw_variables.draw_seed = not self.draw_variables.draw_seed
 
         # Q - lower scaling bias
         if pygame.key.get_pressed()[pygame.K_q]:
@@ -77,11 +79,11 @@ class input_handler:
 
         # RIGHT - add new chunk to the right
         if pygame.key.get_pressed()[pygame.K_RIGHT]:
-            self._add_chunk(1)
+            self._add_chunk_right()
 
         # RIGHT - add new chunk to the left
         if pygame.key.get_pressed()[pygame.K_LEFT]:
-            self._add_chunk(-1)
+            self._add_chunk_left()
 
         # ] - raise the min_height
         if pygame.key.get_pressed()[pygame.K_RIGHTBRACKET]:
@@ -100,7 +102,7 @@ class input_handler:
             self._lower_variability()
 
         # Only happens for 2d noise
-        if self.controller.generation_mode != 1:
+        if self.draw_variables.generation_mode != 1:
             # W - Move backwards
             if pygame.key.get_pressed()[pygame.K_w]:
                 self._move_forward()
@@ -111,21 +113,24 @@ class input_handler:
 
             # toggles 2d grayscale visualization
             if pygame.key.get_pressed()[pygame.K_f]:
-                self.controller.visual_2d_mode = not self.controller.visual_2d_mode
+               self.draw_variables.visual_2d_mode = not self.draw_variables.visual_2d_mode
 
     def _hard_refresh(self):
-        if self.controller.generation_mode == 2:
-            self.controller.full_refresh = True
-        self.controller.regen = True
+        if self.draw_variables.generation_mode == 2:
+            self.draw_variables.full_refresh = True
+        self.draw_variables.regen = True
 
     def _soft_refresh(self):
-        self.controller.refresh = True
+        self.draw_variables.refresh = True
+    
+    def _set_generation_mode(self, mode:int):
+        self.draw_variables.generation_mode = mode
 
     def _regen(self):
-        self.controller.regen = True
+        self.draw_variables.regen = True
 
     def _toggle_debug(self):
-        self.controller.show_debug = not self.controller.show_debug
+        self.draw_variables.show_debug = not self.draw_variables.show_debug
 
     def _randomize_color(self):
         self.colors.randomize_noise_color()
@@ -147,30 +152,45 @@ class input_handler:
         self._soft_refresh()
 
     def _increase_speed(self):
-        if self.controller.speed < 50:
-            self.controller.speed += 1
+        if self.draw_variables.speed < 50:
+            self.draw_variables.speed += 1
 
     def _lower_speed(self):
-        self.controller.speed = max(1, self.controller.speed - 1)
+        self.draw_variables.speed = max(1, self.draw_variables.speed - 1)
 
     def _move_left(self):
-        self.controller.x += 1 * self.controller.speed
+        if self.draw_variables.generation_mode == 1:
+            self.map_1d.x += 1 * self.draw_variables.speed
+        else:
+            self.map_2d.x += 1 * self.draw_variables.speed
 
     def _move_right(self):
-        self.controller.x -= 1 * self.controller.speed
+        if self.draw_variables.generation_mode == 1:
+            self.map_1d.x -= 1 * self.draw_variables.speed
+        else:
+            self.map_2d.x -= 1 * self.draw_variables.speed
 
     # direction should be either -1 for left or 1 for right
-    def _add_chunk(self, direction: int):
-        if self.controller.generation_mode == 1:
-            self.controller.pos_chunks += direction
-            new_chunk = nd.chunk(
-                self.controller.size, self.controller.pos_chunks, self.generation_variables)
-            self.controller.chunks_1d.append(new_chunk)
-        elif self.controller.generation_mode == 2:
-            self.controller.pos_chunks_2d += direction
-            new_chunk = nd.chunk(
-                self.controller.size, self.controller.pos_chunks, self.generation_variables, True)
-            self.controller.chunks_2d.append(new_chunk)
+    def _add_chunk_right(self):
+        if self.draw_variables.generation_mode == 1:
+            self.map_1d.pos_chunks += 1
+            new_chunk = nd.chunk(self.map_1d.pos_chunks, self.generation_variables)
+            self.map_1d.chunks.append(new_chunk)
+        elif self.draw_variables.generation_mode == 2:
+            self.map_2d.pos_chunks += 1
+            new_chunk = nd.chunk(self.map_2d.pos_chunks, self.generation_variables, True)
+            self.map_2d.chunks.append(new_chunk)
+        self._soft_refresh()
+
+    def _add_chunk_left(self):
+        if self.draw_variables.generation_mode == 1:
+            self.map_1d.neg_chunks += 1
+            new_chunk = nd.chunk(self.map_1d.neg_chunks, self.generation_variables)
+            self.map_1d.chunks.append(new_chunk)
+        elif self.draw_variables.generation_mode == 2:
+            self.map_2d.neg_chunks += 1
+            new_chunk = nd.chunk(self.map_2d.neg_chunks, self.generation_variables, True)
+            self.map_2d.chunks.append(new_chunk)
         self._soft_refresh()
 
     def _raise_min_height(self):
@@ -200,21 +220,14 @@ class input_handler:
         self._regen()
 
     def _move_forward(self):
-        speed_adjusted = int(self.controller.speed / 2)
-        self.controller.z += speed_adjusted
-        if self.controller.z > self.controller.width - 1:
-            self.controller.z = min(
-                self.controller.z - self.controller.width, 1)
+        speed_adjusted = int(self.draw_variables.speed / 2)
+        self.map_2d.z += speed_adjusted
+        if self.map_2d.z > self.map_2d.size - 1:
+            self.map_2d.z = min(self.map_2d.z - self.map_2d.size, 1)
 
     def _move_backward(self):
-        speed_adjusted = int(self.controller.speed / 2)
-        self.controller.z += speed_adjusted
-        if self.controller.z < 1:
-            self.controller.z = max(
-                self.controller.width + self.controller.z - 1, self.controller.width - 1)
-
-    def _get_chunks(self):
-        if self.controller.generation_mode == 1:
-            return self.controller.chunks_1d
-        elif self.controller.generation_mode == 2:
-            return self.controller.chunks_2d
+        speed_adjusted = int(self.draw_variables.speed / 2)
+        self.map_2d.z += speed_adjusted
+        if self.map_2d.z < 1:
+            self.map_2d.z = max(
+                self.map_2d.size + self.map_2d.z - 1, self.map_2d.size - 1)
