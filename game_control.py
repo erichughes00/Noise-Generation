@@ -91,12 +91,12 @@ class game_control:
 
     def _regen(self):
         if self.draw_variables.generation_mode == 1:
-            for chunk in self.map_1d.chunks:
-                chunk = nd.chunk(chunk.coordinate, self.generation_variables)
+            for i, chunk in enumerate(self.map_1d.chunks):
+                self.map_1d.chunks[i] = nd.chunk(chunk.coordinate, self.generation_variables)
         elif self.draw_variables.generation_mode == 2:
             if self.draw_variables.full_refresh: 
-                for chunk in self.map_1d.chunks:
-                    chunk = nd.chunk(chunk.coordinate, self.generation_variables)
+                for i, chunk in enumerate(self.map_2d.chunks):
+                    self.map_2d.chunks[i] = nd.chunk(chunk.coordinate, self.generation_variables)
             else:
                 self.map_2d.chunks[-1] = nd.chunk(self.map_2d.chunks[-1].coordinate, self.generation_variables)
         
