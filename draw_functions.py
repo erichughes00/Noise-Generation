@@ -19,7 +19,7 @@ class draw:
             pygame.draw.line(self.surface, self.color.noise_color, (x, map.y_0), (x, y_2))
 
     def draw_noise_2d_side(self, chunk:nd.chunk, map:nd.map):
-        temp_1d_chunk = nd.chunk(chunk.coordinate, chunk.generation_variables, False, chunk.seed, chunk.noise)
+        temp_1d_chunk = nd.chunk(chunk.coordinate, chunk.generation_variables, False, chunk.seed[map.z - 1], chunk.noise[map.z - 1])
         self.draw_noise_1d(temp_1d_chunk, map)
     
     def draw_noise_2d_top(self, chunk:nd.chunk):

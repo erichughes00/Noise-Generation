@@ -30,7 +30,7 @@ class game_control:
         self.draw_variables = nd.draw_variables()
         self.map_1d = nd.map(width, chunks_1d, 1)
         self.map_2d = nd.map(width, chunks_2d, 2)
-        self.input = ih.input_handler(self, self.generation_variables, self.draw_variables, self.map_1d, self.map_2d)
+        self.input = ih.input_handler(self, self.draw_variables, self.map_1d, self.map_2d)
         self.colors = c.color()
         self.draw = df.draw(self.screen, self.colors)
     
@@ -106,7 +106,7 @@ class game_control:
         if self.draw_variables.generation_mode == 1:
             for chunk in self.map_1d.chunks:
                 chunk.noise = gf.generate_noise_1d(chunk)
-        elif self.generation_variables.generation_mode == 2:  # only refreshing the latest chunk for 2d
+        elif self.draw_variables.generation_mode == 2:  # only refreshing the latest chunk for 2d
             if self.draw_variables.full_refresh:
                 for chunk in self.map_2d.chunks:
                     chunk.noise = gf.generate_noise_2d(chunk)

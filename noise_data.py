@@ -1,14 +1,16 @@
 import perlin_noise as perlin
 
 class generation_variables:
-    def __init__(self, size:int, octaves:int, min_height:float, scaling_bias:float, variability:int):
+    def __init__(self, size:int, octaves:int, min_height:float, scaling_bias:float, variability:int, min_heights:list[float]=None):
         self.size = size
         self.octaves = octaves
         self.min_height = min_height
         self.scaling_bias = scaling_bias
         self.variability = variability
-        self.min_heights = None
-        
+        self.min_heights = min_heights
+    
+    def copy(self):
+        return generation_variables(self.size, self.octaves, self.min_height, self.scaling_bias, self.variability, self.min_heights)
 
 class draw_variables:
     def __init__(self):
